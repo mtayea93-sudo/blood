@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<!-- 🔄 تحديث إجباري خاص ببنك الدم — منفصل عن نسخة الموقع الرئيسي -->
+<!-- 🔄 تحديث إجباري: أي جهاز يفتح نسخة قديمة بيتحدّث فوراً -->
 <script>
 (function () {
-  var V = 'blood-2026-10-12a';
-  window.BLOOD_VERSION = V;
+  var V = 'fasaiel-2026-10-12a';
+  window.APP_VERSION = V;
   function nukedReload() {
     if (window.__nuking) return; window.__nuking = true;
-    if ('caches' in window) caches.keys().then(function (ks) { ks.forEach(function (k) { if (k.indexOf('blood') === 0) caches.delete(k); }); });
+    if ('caches' in window) caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
     setTimeout(function () { location.reload(); }, 300);
   }
   async function checkVersion() {
@@ -24,12 +24,9 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🩸 بنك الدم — نظام متبرعي الدم | معامل صقر</title>
+<title>🩸 فصائل الدم — نظام متبرعي الدم</title>
 <meta name="robots" content="noindex">
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="mtayea-signature.js"></script>
+<script src="https://m-tayea.mtayea.com/signature/mtayea-signature.js"></script>
 <script src="https://m-tayea.mtayea.com/signature/mtayea-track.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -41,6 +38,7 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:linear-gradient(135deg,
 .card{background:#fff;border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 10px 40px rgba(0,0,0,.18)}
 .field{margin-bottom:14px}
 .field label{display:block;margin-bottom:6px;font-weight:600;font-size:.9rem;color:#333}
+.req{color:#e74c3c}
 .inp{width:100%;padding:12px 14px;border:2px solid #e3e3e3;border-radius:10px;font-size:1rem;font-family:inherit}
 .inp:focus{outline:none;border-color:#e74c3c;box-shadow:0 0 0 4px rgba(231,76,60,.1)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
@@ -82,100 +80,84 @@ tr:hover td{background:#fafafa}
 .col span{font-size:10.5px;color:#888}.col b{font-size:11px;color:#c0392b}
 .hint{background:#e8f0fe;border-right:4px solid #3b82f6;padding:10px 14px;border-radius:10px;color:#0d3c78;font-size:.85rem;margin-bottom:12px}
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:#fff;flex-wrap:wrap}
+.ro-banner{background:#fff8e6;color:#8a6d1a;padding:8px 14px;font-size:13px;font-weight:700;text-align:center;border-radius:10px;margin-bottom:12px;border:1px solid #f0dfae}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div id="root"></div>
-</div>
+<div class="wrap"><div id="root"></div></div>
 <script>
 /* ============================================================
-   🩸 بنك الدم المستقل — معامل صقر
-   السحابة: Firebase RTDB مشروع sakrlab2026 (نفس سحابة موقع صقر)
-   المسار: sakr/bloodDonors + sakr/bloodDonations
-   كلمة المرور: نفس كلمة مرور لوحة تحكم موقع صقر (من sakr/settings)
+   🩸 فصائل الدم — نظام مستقل لإدارة متبرعي الدم
+   السحابة: Cloudflare KV (نفس سيرفر CSL) — بيتزامن على كل الأجهزة
    ============================================================ */
-const V = 'blood-2026-10-12a';
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAPawpCwihRHOaPjMzhhcsSDa9WAy0Qx-Q",
-  authDomain: "sakrlab2026.firebaseapp.com",
-  databaseURL: "https://sakrlab2026-default-rtdb.firebaseio.com",
-  projectId: "sakrlab2026",
-  storageBucket: "sakrlab2026.firebasestorage.app",
-  messagingSenderId: "1049726811378",
-  appId: "1:1049726811378:web:0959efa43bad0f7e24e46b"
-};
+const V = 'fasaiel-2026-10-12a';
+const APP_NAME = 'فصائل الدم';
+const SYNC_URL = 'https://csl-sync.m-tayea93.workers.dev';
+const SYNC_KEY = 'casa-sync-k3m9qf27ahmed2026';
+const ADMIN_PASS = 'mhmd@1993';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const toast = (m, err) => { document.querySelectorAll('.toast').forEach(t => t.remove()); const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); };
 const uid = p => p + Date.now().toString(36) + Math.floor(Math.random() * 1e4);
 
-/* ---------- طبقة البيانات: محلي + Firebase ---------- */
-const FB = { ready: false, db: null, connected: false };
-let bloodDonors = [], bloodDonations = [], adminCreds = { adminPass: 'mhmd@1993' };
-
-function localGet(k, d) { try { const v = JSON.parse(localStorage.getItem('blood_' + k)); return v == null ? d : v; } catch (e) { return d; } }
-function localSet(k, v) { try { localStorage.setItem('blood_' + k, JSON.stringify(v)); } catch (e) {} }
+/* ---------- طبقة البيانات: محلي + Cloudflare KV ---------- */
+const CF = { online: false };
+let bloodDonors = [], bloodDonations = [];
+function localGet(k, d) { try { const v = JSON.parse(localStorage.getItem('fasl_' + k)); return v == null ? d : v; } catch (e) { return d; } }
+function localSet(k, v) { try { localStorage.setItem('fasl_' + k, JSON.stringify(v)); localStorage.setItem('fasl_mt_' + k, Date.now()); } catch (e) {} }
+async function cfReq(doc, method, body) {
+  const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const r = await fetch(SYNC_URL + '/casa?key=' + SYNC_KEY + '&doc=' + encodeURIComponent(doc), {
+      method: method || 'GET', signal: ctrl.signal,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined });
+    if (!r.ok) throw new Error('http ' + r.status);
+    CF.online = true; updateSyncBadge();
+    return await r.json();
+  } catch (e) { CF.online = false; updateSyncBadge(); return null; }
+}
 function save(k) {
-  if (!k) { save('bloodDonors'); save('bloodDonations'); return; }
-  const v = k === 'bloodDonors' ? bloodDonors : bloodDonations;
+  if (!k) { save('donors'); save('donations'); return; }
+  const v = k === 'donors' ? bloodDonors : bloodDonations;
   localSet(k, v);
-  if (FB.ready) { try { if (!v.length) FB.db.ref('sakr/' + k).remove(); else FB.db.ref('sakr/' + k).set({ t: Date.now(), d: v }); } catch (e) {} }
+  if (v.length) cfReq('fasl:' + k, 'PUT', { t: Date.now(), d: v });
+  else cfReq('fasl:' + k, 'PUT', { t: Date.now(), d: [] });
 }
-function applyCloud(k, v) {
-  if (!Array.isArray(v)) v = [];
-  if (k === 'bloodDonors') bloodDonors = v; else bloodDonations = v;
-  localSet(k, v);
-  if (state.tab) render();
-}
-function initFb() {
-  if (typeof firebase === 'undefined' || !FIREBASE_CONFIG.apiKey) return;
-  try { firebase.initializeApp(FIREBASE_CONFIG); } catch (e) {}
-  FB.db = firebase.database(); FB.ready = true;
-  if (firebase.auth) firebase.auth().signInAnonymously().catch(e => console.warn('auth:', e.code));
-  FB.db.ref('.info/connected').on('value', s => { FB.connected = !!s.val(); updateSyncBadge(); });
-  ['bloodDonors', 'bloodDonations'].forEach(k => {
-    FB.db.ref('sakr/' + k).on('value', s => {
-      const v = s.val();
-      if (v && v.d) {
-        const lv = localGet(k, []);
-        if (JSON.stringify(lv) !== JSON.stringify(v.d)) applyCloud(k, v.d);
+async function cloudPull() {
+  for (const k of ['donors', 'donations']) {
+    const j = await cfReq('fasl:' + k);
+    if (j && j.d) {
+      const local = localGet(k, []);
+      const cloudNewer = j.t && j.t > (+localStorage.getItem('fasl_mt_' + k) || 0);
+      if (cloudNewer && JSON.stringify(local) !== JSON.stringify(j.d)) {
+        if (k === 'donors') bloodDonors = j.d; else bloodDonations = j.d;
+        localSet(k, j.d);
+        if (state.tab) render();
       }
-    });
-  });
-  /* بيانات اعتماد الأدمن من إعدادات صقر (نفس كلمة المرور) */
-  FB.db.ref('sakr/settings').on('value', s => {
-    const v = s.val();
-    if (v && v.d) adminCreds = v.d;
-  });
+    }
+  }
 }
-function updateSyncBadge() { const el = $('#sync-badge'); if (el) el.className = 'sync ' + (FB.connected ? 'on' : ''); el && (el.textContent = FB.connected ? '☁️ متصل بالسحابة — بيتزامن لحظياً' : '💾 محلي — الشغل محفوظ على الجهاز'); }
+function updateSyncBadge() { const el = $('#sync-badge'); if (el) { el.className = 'sync ' + (CF.online ? 'on' : ''); el.textContent = CF.online ? '☁️ متصل بالسحابة — بيتزامن على كل الأجهزة' : '💾 محلي — الشغل محفوظ على الجهاز وهيتزامن أول ما النت يوصل'; } }
 
-/* ---------- الأمان والجلسة ---------- */
-const SEC = (() => {
-  const enc = new TextEncoder();
-  const rnd = n => { const b = new Uint8Array(n); crypto.getRandomValues(b); return Array.from(b, x => x.toString(16).padStart(2, '0')).join(''); };
-  const sha = async s => { const b = await crypto.subtle.digest('SHA-256', enc.encode(s)); return Array.from(new Uint8Array(b), x => x.toString(16).padStart(2, '0')).join(''); };
-  const hashNew = async p => { const salt = rnd(16); return { salt, pass: await sha(salt + ':' + p) }; };
-  const verify = async (rec, p) => {
-    if (!rec) return { ok: false };
-    if (rec.adminSalt && rec.adminPass) return { ok: (await sha(rec.adminSalt + ':' + p)) === rec.adminPass };
-    if (rec.adminPass === p) { const h = await hashNew(p); return { ok: true, upgraded: true, rec: h }; }
-    return { ok: false };
-  };
-  const cyrb = (s, seed) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
-  const secret = () => 'sakr-blood|' + ((adminCreds && (adminCreds.adminSalt || adminCreds.adminPass)) || '');
-  const sign = ds => { const s = secret() + '|' + ds.u; return cyrb(s, 7) + cyrb(s.split('').reverse().join(''), 13); };
-  return { verify, sign };
-})();
-const SES_KEY = 'blood_ses';
-function session() { try { return JSON.parse(sessionStorage.getItem(SES_KEY)); } catch (e) { return null; } }
-function setSession(s) { s.sig = SEC.sign(s); sessionStorage.setItem(SES_KEY, JSON.stringify(s)); }
-function sessionTampered() { const s = session(); if (!s) return false; return !s.sig || s.sig !== SEC.sign(s); }
+/* ---------- الجلسة + وضع المعاينة ---------- */
+const SES_KEY = 'fasl_ses';
+let __roWarnAt = 0;
+function roBlocked() {
+  const s = session();
+  if (!s || !s.ro) return false;
+  const n = Date.now();
+  if (n - __roWarnAt > 4000) { __roWarnAt = n; toast('👁️ وضع المعاينة — للمشاهدة فقط، ممنوع الإضافة أو التعديل أو الحذف', true); }
+  return true;
+}
+function cyrb(s, seed) { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); }
+function signSes(s) { const str = 'fasl|' + ADMIN_PASS + '|' + s.u + '|' + (s.ro ? '1' : '0'); return cyrb(str, 7) + cyrb(str.split('').reverse().join(''), 13); }
+function session() { try { const s = JSON.parse(sessionStorage.getItem(SES_KEY)); if (!s) return null; return (signSes(s) === s.sig) ? s : null; } catch (e) { return null; } }
+function setSession(s) { s.sig = signSes(s); sessionStorage.setItem(SES_KEY, JSON.stringify(s)); }
 function logout() { sessionStorage.removeItem(SES_KEY); render(); }
 
-/* ---------- منطق بنك الدم ---------- */
+/* ---------- منطق فصائل الدم ---------- */
 function badge(t) { const c = { 'A+': 'b-a-pos', 'A-': 'b-a-neg', 'B+': 'b-b-pos', 'B-': 'b-b-neg', 'AB+': 'b-ab-pos', 'AB-': 'b-ab-neg', 'O+': 'b-o-pos', 'O-': 'b-o-neg' }[t]; return t ? `<span class="badge ${c}">${esc(t)}</span>` : '<span style="color:#bbb">—</span>'; }
 function lastDate(d) { const ds = bloodDonations.filter(x => x.donorId === d.id).map(x => x.date).sort(); return ds.length ? ds[ds.length - 1] : (d.lastDonation || ''); }
 function daysSince(d) { const l = lastDate(d); if (!l) return null; return Math.floor((Date.now() - new Date(l).getTime()) / 86400000); }
@@ -189,11 +171,12 @@ function go(t) { state.tab = t; render(); }
 /* ---------- التصيير ---------- */
 function render() {
   const ses = session();
-  if (!ses || sessionTampered()) { sessionStorage.removeItem(SES_KEY); return renderLogin(); }
+  if (!ses) return renderLogin();
   const tabs = [['donors', '📋 المتبرعون'], ['new', '➕ تسجيل متبرع'], ['donations', '🩸 سجل التبرعات'], ['need', '📣 مطلوب متبرعون'], ['stats', '📊 الإحصائيات']];
   if (!state.tab) state.tab = 'donors';
   $('#root').innerHTML = `
-    <div class="head"><h1>🩸 بنك الدم</h1><p>نظام متبرعي الدم — ${esc(adminCreds.labName || 'معامل صقر')}</p></div>
+    <div class="head"><h1>🩸 ${APP_NAME}</h1><p>نظام إدارة متبرعي الدم</p></div>
+    ${ses.ro ? '<div class="ro-banner">👁️ دخول تجريبي — معاينة فقط: تقدر تشوف كل حاجة، وممنوع الإضافة أو التعديل أو الحذف</div>' : ''}
     <div class="topbar">
       <div class="tabs">${tabs.map(t => `<button class="tab ${state.tab === t[0] ? 'on' : ''}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}</div>
       <span style="flex:1"></span>
@@ -212,26 +195,27 @@ function render() {
 function renderLogin() {
   $('#root').innerHTML = `
   <div class="login-box">
-    <h1>🩸 بنك الدم</h1>
-    <div class="sub">نظام متبرعي الدم — دخول الإدارة<br>نفس كلمة مرور لوحة تحكم موقع صقر</div>
+    <h1>🩸 ${APP_NAME}</h1>
+    <div class="sub">نظام إدارة متبرعي الدم — دخول الإدارة</div>
     <div class="field"><label>كلمة المرور</label><input class="inp" type="password" id="li-pass" placeholder="••••••••"></div>
     <button class="btn" style="width:100%;justify-content:center" onclick="doLogin()">دخول ⬅</button>
+    <button class="btn btn-o" style="width:100%;justify-content:center;margin-top:10px" onclick="demoLogin()">👁️ دخول تجريبي — معاينة فقط</button>
   </div>`;
   $('#li-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   setTimeout(() => $('#li-pass')?.focus(), 100);
 }
-async function doLogin() {
-  const p = $('#li-pass').value;
-  const v = await SEC.verify(adminCreds, p);
-  if (!v.ok) return toast('❌ كلمة المرور غير صحيحة', true);
-  if (v.upgraded) {
-    adminCreds = { adminPass: v.rec.pass, adminSalt: v.rec.salt };
-    if (FB.ready) { try { FB.db.ref('sakr/settings').set({ t: Date.now(), d: adminCreds }); } catch (e) {} }
-  }
-  setSession({ u: 'admin', at: Date.now() });
+function doLogin() {
+  if ($('#li-pass').value !== ADMIN_PASS) return toast('❌ كلمة المرور غير صحيحة', true);
+  setSession({ u: 'admin', ro: false, at: Date.now() });
   state.tab = 'donors';
   render();
   toast('✅ أهلاً بيك');
+}
+function demoLogin() {
+  setSession({ u: 'demo', ro: true, at: Date.now() });
+  state.tab = 'donors';
+  render();
+  toast('👁️ دخلت وضع المعاينة — شوف كل حاجة من غير ما تضيف أو تعدل');
 }
 
 /* ---------- عرض: المتبرعون ---------- */
@@ -252,7 +236,7 @@ function viewDonors() {
     <td>${d.phone ? `<a class="btn btn-sm" href="tel:${esc(d.phone)}">📞</a>` : '-'}</td></tr>`).join('')}</table></div>` : ''}
   <div class="card">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-      <input class="inp" style="flex:1;min-width:220px" placeholder="🔍 ابحث بالاسم / التليفون / الرقم القومي..." value="${esc(state.q)}" oninput="state.q=this.value;refreshTable()">
+      <input class="inp" style="flex:1;min-width:220px" placeholder="🔍 ابحث بالاسم / التليفون / رقم البطاقة..." value="${esc(state.q)}" oninput="state.q=this.value;refreshTable()">
       <button class="btn btn-o" onclick="exportCsv('donors')">📥 Excel</button>
       <label class="btn btn-o" style="margin:0">📤 استيراد<input type="file" accept=".json" style="display:none" onchange="importJson(event)"></label>
     </div>
@@ -263,12 +247,15 @@ function donorsTable() {
   const q = state.q.trim().toLowerCase();
   const list = !q ? bloodDonors : bloodDonors.filter(d => (d.name || '').toLowerCase().includes(q) || (d.phone || '').includes(q) || (d.nationalId || '').includes(q));
   if (!list.length) return '<div class="empty">لا يوجد متبرعون — سجل أول متبرع من «➕ تسجيل متبرع»</div>';
-  return `<table><tr><th>#</th><th>الاسم</th><th>الفصيلة</th><th>التليفون</th><th>آخر تبرع</th><th>الحالة</th><th>إجراءات</th></tr>
+  return `<table><tr><th>#</th><th>الاسم</th><th>رقم البطاقة</th><th>التليفون</th><th>العنوان</th><th>الفصيلة</th><th>آخر تبرع</th><th>الحالة</th><th>إجراءات</th></tr>
   ${list.map((d, i) => {
     const x = daysSince(d), elig = eligible(d);
     return `<tr><td>${i + 1}</td>
-    <td><b>${esc(d.name)}</b>${d.nationalId ? `<br><small style="color:#999">${esc(d.nationalId)}</small>` : ''}</td>
-    <td>${badge(d.bloodType)}</td><td dir="ltr">${esc(d.phone || '—')}</td>
+    <td><b>${esc(d.name)}</b></td>
+    <td class="num">${esc(d.nationalId || '—')}</td>
+    <td dir="ltr">${esc(d.phone || '—')}</td>
+    <td>${esc(d.address || '—')}</td>
+    <td>${badge(d.bloodType)}</td>
     <td>${x === null ? '<span style="color:#bbb">لم يتبرع</span>' : 'منذ ' + x + ' يوم'}</td>
     <td>${elig ? '<b style="color:#219a52">✅ مؤهل</b>' : `<b style="color:#e74c3c">⛔ بعد ${97 - x} يوم</b>`}</td>
     <td style="white-space:nowrap">
@@ -281,7 +268,7 @@ function donorsTable() {
 }
 function refreshTable() { const el = $('#tbl'); if (el) el.innerHTML = donorsTable(); }
 
-/* ---------- عرض: تسجيل متبرع ---------- */
+/* ---------- عرض: تسجيل متبرع (الحقول الأساسية الخمسة) ---------- */
 function viewNew() {
   return `<div class="card" style="max-width:620px">
     ${donorForm('')}
@@ -292,33 +279,44 @@ function viewNew() {
 }
 function donorForm(d) {
   return `
-  <div class="field"><label>الاسم الكامل *</label><input class="inp" id="f-name" value="${esc(d.name || '')}"></div>
+  <div class="field"><label>الاسم رباعي <span class="req">*أساسي</span></label><input class="inp" id="f-name" placeholder="مثال: أحمد محمد علي حسن" value="${esc(d.name || '')}"></div>
   <div class="grid2">
-    <div class="field"><label>الرقم القومي (14 رقم)</label><input class="inp" id="f-nid" maxlength="14" value="${esc(d.nationalId || '')}" oninput="this.value=this.value.replace(/\\D/g,'')"></div>
-    <div class="field"><label>رقم التليفون *</label><input class="inp" id="f-phone" dir="ltr" value="${esc(d.phone || '')}"></div>
+    <div class="field"><label>رقم البطاقة (14 رقم) <span class="req">*أساسي</span></label><input class="inp" id="f-nid" maxlength="14" placeholder="14 رقم" value="${esc(d.nationalId || '')}" oninput="this.value=this.value.replace(/\\D/g,'')"></div>
+    <div class="field"><label>رقم التليفون <span class="req">*أساسي</span></label><input class="inp" id="f-phone" dir="ltr" placeholder="01xxxxxxxxx" value="${esc(d.phone || '')}"></div>
   </div>
   <div class="grid2">
-    <div class="field"><label>فصيلة الدم</label><select class="inp" id="f-type">
-      <option value="">— مش معروفة —</option>
+    <div class="field"><label>فصيلة الدم <span class="req">*أساسي</span></label><select class="inp" id="f-type">
+      <option value="">— اختر الفصيلة —</option>
       ${['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(t => `<option ${d.bloodType === t ? 'selected' : ''}>${t}</option>`).join('')}
     </select></div>
-    <div class="field"><label>تاريخ الميلاد</label><input class="inp" type="date" id="f-dob" value="${esc(d.birthDate || '')}"></div>
+    <div class="field"><label>العنوان <span class="req">*أساسي</span></label><input class="inp" id="f-addr" placeholder="المدينة / القرية / الشارع" value="${esc(d.address || '')}"></div>
   </div>
-  <div class="field"><label>العنوان</label><input class="inp" id="f-addr" value="${esc(d.address || '')}"></div>`;
+  <div class="grid2">
+    <div class="field"><label>تاريخ الميلاد (اختياري)</label><input class="inp" type="date" id="f-dob" value="${esc(d.birthDate || '')}"></div>
+    <div class="field"><label>آخر تبرع يدوي (اختياري)</label><input class="inp" type="date" id="f-last" value="${esc(d.lastDonation || '')}"></div>
+  </div>`;
 }
 function saveDonor(id) {
+  if (roBlocked()) return;
   const name = $('#f-name').value.trim(), phone = $('#f-phone').value.trim(), nid = $('#f-nid').value.trim();
+  const addr = $('#f-addr').value.trim(), type = $('#f-type').value;
   if (!name) return toast('⚠️ الاسم مطلوب', true);
+  if (name.split(/\s+/).filter(Boolean).length < 4) return toast('⚠️ الاسم لازم يكون رباعي — مثال: أحمد محمد علي حسن', true);
+  if (!nid) return toast('⚠️ رقم البطاقة مطلوب', true);
+  if (nid.length !== 14) return toast('⚠️ رقم البطاقة لازم 14 رقم', true);
   if (!phone) return toast('⚠️ رقم التليفون مطلوب', true);
-  if (nid && nid.length !== 14) return toast('⚠️ الرقم القومي لازم 14 رقم', true);
-  if (!id && nid && bloodDonors.find(d => d.nationalId === nid)) return toast('⚠️ الرقم القومي مسجل قبل كده', true);
-  const rec = { name, phone, nationalId: nid, bloodType: $('#f-type').value, birthDate: $('#f-dob').value, address: $('#f-addr').value.trim() };
+  if (!addr) return toast('⚠️ العنوان مطلوب', true);
+  if (!type) return toast('⚠️ فصيلة الدم مطلوبة', true);
+  const other = bloodDonors.find(d => d.nationalId === nid && d.id !== id);
+  if (other) return toast('⚠️ رقم البطاقة مسجل قبل كده باسم: ' + other.name, true);
+  const rec = { name, phone, nationalId: nid, bloodType: type, address: addr, birthDate: $('#f-dob').value, lastDonation: $('#f-last').value };
   if (id) { const d = bloodDonors.find(x => x.id === id); if (d) Object.assign(d, rec); toast('✅ تم التحديث'); }
-  else { bloodDonors.push({ id: uid('bd'), ...rec, source: 'manual', lastDonation: '', registeredAt: new Date().toISOString() }); toast('✅ تم التسجيل'); }
-  save('bloodDonors');
+  else { bloodDonors.push({ id: uid('bd'), ...rec, source: 'manual', registeredAt: new Date().toISOString() }); toast('✅ تم التسجيل'); }
+  save('donors');
   go('donors');
 }
 function editDonor(id) {
+  if (roBlocked()) return;
   const d = bloodDonors.find(x => x.id === id); if (!d) return;
   state.tab = 'new';
   render();
@@ -330,6 +328,7 @@ function editDonor(id) {
     </div></div>`;
 }
 function delDonor(id) {
+  if (roBlocked()) return;
   const d = bloodDonors.find(x => x.id === id); if (!d) return;
   if (!confirm(`حذف المتبرع «${d.name}» وسجل تبرعاته؟`)) return;
   bloodDonors = bloodDonors.filter(x => x.id !== id);
@@ -341,6 +340,7 @@ function delDonor(id) {
 
 /* ---------- تبرع ---------- */
 function donateModal(id) {
+  if (roBlocked()) return;
   const d = bloodDonors.find(x => x.id === id); if (!d) return;
   const div = document.createElement('div');
   div.id = 'modal-bb';
@@ -362,6 +362,7 @@ function donateModal(id) {
   document.body.appendChild(div);
 }
 function saveDonation(donorId) {
+  if (roBlocked()) return;
   const date = $('#dn-date').value, qty = +$('#dn-qty').value;
   if (!date) return toast('⚠️ التاريخ مطلوب', true);
   if (!qty || qty <= 0) return toast('⚠️ الكمية غير صحيحة', true);
@@ -369,15 +370,16 @@ function saveDonation(donorId) {
   const l = d ? lastDate(d) : '';
   if (l && date <= l && !confirm('التاريخ ده قبل آخر تبرع — متأكد؟')) return;
   bloodDonations.push({ id: uid('dn'), donorId, date, qty, place: $('#dn-place').value.trim(), notes: $('#dn-notes').value.trim(), createdAt: new Date().toISOString() });
-  save('bloodDonations');
+  save('donations');
   $('#modal-bb')?.remove();
   render();
   toast('🩸 تم تسجيل التبرع');
 }
 function delDonation(id) {
+  if (roBlocked()) return;
   if (!confirm('حذف عملية التبرع دي؟')) return;
   bloodDonations = bloodDonations.filter(x => x.id !== id);
-  save('bloodDonations');
+  save('donations');
   render();
   toast('🗑️ تم الحذف');
 }
@@ -426,8 +428,9 @@ function viewNeed() {
     ${t && list.length ? `
       <div class="hint">✅ فيه ${list.length} متبرع مؤهل — مرتبين بالأولوية (الأقدم تبرعاً الأول)
         <button class="btn btn-o btn-sm" style="margin-right:8px" onclick="printNeed()">🖨️ طباعة القائمة</button></div>
-      <table><tr><th>#</th><th>الاسم</th><th>آخر تبرع</th><th>التليفون</th><th></th></tr>
+      <table><tr><th>#</th><th>الاسم</th><th>العنوان</th><th>آخر تبرع</th><th>التليفون</th><th></th></tr>
       ${list.map((d, i) => `<tr><td>${i + 1}</td><td><b>${esc(d.name)}</b></td>
+        <td>${esc(d.address || '—')}</td>
         <td>${daysSince(d) === null ? 'لم يتبرع' : 'منذ ' + daysSince(d) + ' يوم'}</td>
         <td dir="ltr">${esc(d.phone || '—')}</td>
         <td>${d.phone ? `<a class="btn btn-sm" href="tel:${esc(d.phone)}">📞 اتصال</a>` : '-'}</td></tr>`).join('')}
@@ -480,21 +483,24 @@ function printDoc(title, inner) {
   table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{padding:9px 10px;border-bottom:1px solid #eee;text-align:right}th{background:#c0392b;color:#fff}
   .sum{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0}.box{border:1px solid #eee;border-radius:10px;padding:12px 20px;text-align:center}.box b{display:block;font-size:1.4rem;color:#c0392b}
   .foot{margin-top:22px;text-align:center;color:#aaa;font-size:.75rem}</style></head><body>
-  <h1>🩸 ${title}</h1><div class="sub">بنك الدم — معامل صقر — ${new Date().toLocaleDateString('ar-EG')}</div>${inner}
-  <div class="foot">نظام متبرعي الدم — sakr.mtayea.com/blood.html</div>
+  <h1>🩸 ${title}</h1><div class="sub">${APP_NAME} — ${new Date().toLocaleDateString('ar-EG')}</div>${inner}
+  <div class="foot">${APP_NAME} — نظام إدارة متبرعي الدم</div>
   <script>setTimeout(()=>print(),400)<\/script></body></html>`);
   w.document.close();
 }
 function printCard(id) {
   const d = bloodDonors.find(x => x.id === id); if (!d) return;
-  printDoc('كارت متبرع دم', `<table style="max-width:380px">
+  printDoc('كارت متبرع دم', `<table style="max-width:420px">
     <tr><td style="color:#777">الاسم</td><td><b>${esc(d.name)}</b></td></tr>
+    <tr><td style="color:#777">رقم البطاقة</td><td>${esc(d.nationalId || '—')}</td></tr>
     <tr><td style="color:#777">الفصيلة</td><td><b style="font-size:1.3rem;color:#c0392b">${esc(d.bloodType || '—')}</b></td></tr>
+    <tr><td style="color:#777">العنوان</td><td>${esc(d.address || '—')}</td></tr>
     <tr><td style="color:#777">آخر تبرع</td><td>${lastDate(d) || '—'}</td></tr>
     <tr><td style="color:#777">عدد مرات التبرع</td><td>${donorDonations(d)}</td></tr>
     <tr><td style="color:#777">الحالة</td><td><b>${eligible(d) ? '✅ مؤهل للتبرع' : '⛔ غير مؤهل حالياً'}</b></td></tr></table>`);
 }
 function reportModal() {
+  if (roBlocked()) return;
   const div = document.createElement('div');
   div.id = 'modal-bb';
   div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9998;padding:16px';
@@ -540,21 +546,21 @@ function printNeed() {
   const t = state.needType;
   const list = bloodDonors.filter(d => d.bloodType === t && eligible(d)).sort((a, b) => (daysSince(a) ?? -1) - (daysSince(b) ?? -1));
   if (!list.length) return toast('مفيش متبرعين مؤهلين للفصيلة دي');
-  printDoc('مطلوب متبرعون — فصيلة ' + t, `<table><tr><th>#</th><th>الاسم</th><th>التليفون</th><th>آخر تبرع</th></tr>
-    ${list.map((d, i) => `<tr><td>${i + 1}</td><td>${esc(d.name)}</td><td dir="ltr">${esc(d.phone || '—')}</td><td>${daysSince(d) === null ? 'لم يتبرع' : 'منذ ' + daysSince(d) + ' يوم'}</td></tr>`).join('')}</table>`);
+  printDoc('مطلوب متبرعون — فصيلة ' + t, `<table><tr><th>#</th><th>الاسم</th><th>العنوان</th><th>التليفون</th><th>آخر تبرع</th></tr>
+    ${list.map((d, i) => `<tr><td>${i + 1}</td><td>${esc(d.name)}</td><td>${esc(d.address || '—')}</td><td dir="ltr">${esc(d.phone || '—')}</td><td>${daysSince(d) === null ? 'لم يتبرع' : 'منذ ' + daysSince(d) + ' يوم'}</td></tr>`).join('')}</table>`);
 }
 
 /* ---------- تصدير / استيراد ---------- */
 function exportCsv(what) {
   let rows, name;
   if (what === 'donations') {
-    name = 'blood-donations-' + today() + '.csv';
+    name = 'fasl-donations-' + today() + '.csv';
     rows = [['التاريخ', 'المتبرع', 'الفصيلة', 'الكمية', 'المكان', 'ملاحظات']];
     [...bloodDonations].sort((a, b) => b.date.localeCompare(a.date)).forEach(x => { const d = bloodDonors.find(z => z.id === x.donorId); rows.push([x.date, d ? d.name : '', d ? d.bloodType : '', x.qty, x.place || '', x.notes || '']); });
   } else {
-    name = 'blood-donors-' + today() + '.csv';
-    rows = [['الاسم', 'الرقم القومي', 'التليفون', 'الفصيلة', 'آخر تبرع', 'عدد التبرعات', 'الحالة']];
-    bloodDonors.forEach(d => rows.push([d.name, d.nationalId || '', d.phone || '', d.bloodType || '', lastDate(d), donorDonations(d), eligible(d) ? 'مؤهل' : 'غير مؤهل']));
+    name = 'fasl-donors-' + today() + '.csv';
+    rows = [['الاسم', 'رقم البطاقة', 'التليفون', 'العنوان', 'الفصيلة', 'آخر تبرع', 'عدد التبرعات', 'الحالة']];
+    bloodDonors.forEach(d => rows.push([d.name, d.nationalId || '', d.phone || '', d.address || '', d.bloodType || '', lastDate(d), donorDonations(d), eligible(d) ? 'مؤهل' : 'غير مؤهل']));
   }
   const csv = '﻿' + rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\r\n');
   const a = document.createElement('a');
@@ -563,6 +569,7 @@ function exportCsv(what) {
   toast('📥 تم التصدير — بيفتح في Excel');
 }
 function importJson(ev) {
+  if (roBlocked()) return;
   const f = ev.target.files[0]; if (!f) return;
   const r = new FileReader();
   r.onload = e => {
@@ -574,10 +581,10 @@ function importJson(ev) {
         if (!x || !x.name) return;
         const nid = (x.nationalId || '').trim();
         if (nid && bloodDonors.find(d => d.nationalId === nid)) return;
-        bloodDonors.push({ id: uid('bd'), name: String(x.name), nationalId: nid, phone: x.phone || '', bloodType: x.bloodType || '', birthDate: x.birthDate || '', address: x.address || '', lastDonation: x.lastDonation || '', source: 'import', registeredAt: new Date().toISOString() });
+        bloodDonors.push({ id: uid('bd'), name: String(x.name), nationalId: nid, phone: x.phone || '', address: x.address || '', bloodType: x.bloodType || '', birthDate: x.birthDate || '', lastDonation: x.lastDonation || '', source: 'import', registeredAt: new Date().toISOString() });
         added++;
       });
-      save('bloodDonors');
+      save('donors');
       render();
       toast('📤 تم استيراد ' + added + ' متبرع');
     } catch (err) { alert('❌ ملف غير صالح: ' + err.message); }
@@ -586,22 +593,14 @@ function importJson(ev) {
 }
 
 /* ---------- الإقلاع ---------- */
-bloodDonors = localGet('bloodDonors', []);
-bloodDonations = localGet('bloodDonations', []);
-/* كلمة المرور: من إعدادات صقر المحلية (نفسها اللي بيستخدمها موقع صقر) أو الافتراضية */
-const sakrLocalSettings = (() => { try { return JSON.parse(localStorage.getItem('sakr_settings')); } catch (e) { return null; } })();
-adminCreds = Object.assign({ adminPass: 'mhmd@1993' }, sakrLocalSettings || {}, localGet('settings', {}));
+bloodDonors = localGet('donors', []);
+bloodDonations = localGet('donations', []);
 window.addEventListener('load', () => {
-  initFb();
-  /* لو الإعدادات محفوظة محلياً ولسه وصلة السحابة، اقرأ منها مؤقتاً */
-  setTimeout(() => {
-    if (!FB.connected) {
-      const s = localGet('settings', null);
-      if (s) adminCreds = s;
-    }
-    render();
-  }, 600);
+  cloudPull();
+  setInterval(cloudPull, 30000);
+  render();
 });
+
 </script>
 </body>
 </html>
