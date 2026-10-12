@@ -7,17 +7,18 @@ permissions:
   contents: read
   pages: write
   id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Enable Pages if needed
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" https://api.github.com/repos/${{ github.repository }}/pages)
+          echo "pages status: $CODE"
+          if [ "$CODE" = "404" ]; then
+            curl -s -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" -d '{"build_type":"workflow"}' https://api.github.com/repos/${{ github.repository }}/pages
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
